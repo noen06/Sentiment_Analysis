@@ -280,7 +280,6 @@ The counterfactual generation function retries up to **3 times** on API failure 
 - **Expand LIME and counterfactual evaluation** — both currently run on a single hardcoded tweet; parameterize the list for systematic batch evaluation. A batch sentiment-flip-rate experiment over many sampled tweets was intentionally left out of the notebook because it would issue a very large number of Groq API calls and hit rate limits — worth doing as a separate, throttled job (with backoff/queuing) rather than inline in the notebook.
 - **Include `Irrelevant` class** — if 4-class classification is needed, remove the filtering in Step 2 and update `NUM_CLASSES = 4`.
 - **Move large binaries out of plain git** — `ablation_ckpt/` (40 `.weights.h5` files), `best_model/`, and the dataset are all committed directly rather than via Git LFS; worth revisiting once the repo grows further.
-- **Clean up leftover copy from earlier iterations** — a few printed strings (e.g. "Ollama Counterfactual Generation", a stray "Step 6.7" reference in the Step 7 demo) are carried over from an earlier version of the notebook that used a different LLM/step numbering; harmless at runtime but worth fixing for clarity.
 
 ---
 
@@ -329,7 +328,7 @@ The trained fusion head beats every baseline, but the margin over the plain TF-I
 
 **Auxiliary topic classifier (Step 3.4):** 5-fold CV accuracy 0.9490 (`C=10.0`, `max_features=20000`); test accuracy 0.9544, test macro-F1 0.9212 — this is the classifier whose *predictions* feed the main model's `topic_id` input.
 
-**Counterfactual demo (Step 9):** a League-of-Legends complaint tweet predicted `Negative` (83.24% confidence) was rewritten by Groq to flip to `Positive` (50.26% confidence) — probability deltas of Negative −0.8190, Neutral +0.3627, Positive +0.4563. Full explanation saved to `counterfactual_Example/counterfactual_example_1.txt`.
+**Counterfactual demo (Step 9):** a League-of-Legends complaint tweet predicted `Negative` (82.47% confidence) was rewritten by Groq to flip to `Positive` (39.08% confidence) — probability deltas of Negative −0.5021, Neutral +0.1559, Positive +0.3462. Full explanation saved to `counterfactual_Example/counterfactual_example_1.txt`.
 
 **Outputs produced:**
 

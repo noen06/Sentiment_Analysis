@@ -6,7 +6,7 @@ The model predicted **Negative** (confidence: 82.5%) for:
 🔍 LIME — Words pushing TOWARD 'Negative': 'another' (+0.0918), 'ruining' (+0.0815), 'done' (+0.0737)
 🔍 LIME — Words pushing AWAY from 'Negative': 'champion' (-0.0398), 'pc' (-0.0350), 'are' (-0.0208)
 
-🤖 Ollama Counterfactual Generation:
+🤖 Groq Counterfactual Generation:
    Status: success
 
 ✅ By modifying the tweet, the sentiment flips to **Positive** (confidence: 39.1%).
