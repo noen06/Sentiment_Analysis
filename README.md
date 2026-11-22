@@ -33,7 +33,7 @@ This project classifies tweet sentiment across **3 classes** — `Negative`, `Ne
 - **Baseline comparison (Table 3)** — zero-shot RoBERTa head, TF-IDF + Logistic Regression, TF-IDF + predicted-topic one-hot + Logistic Regression, RoBERTa embeddings + Logistic Regression, and a light-cleaning delta, all measured on the same test split
 - **Ablation study** — the full head trained with the topic branch, skip connection, or BatchNorm removed one at a time, each at 2 epoch budgets × 5 seeds, reported as mean ± std
 - **LIME explainability** — token-level attribution via a full re-embedding perturbation wrapper, explained on the exact cleaned string the model receives
-- **Counterfactual generation** — Groq API (`llama-3.1-8b-instant`) guided by LIME word weights to produce a minimal-edit sentiment-flipping rewrite for a demo tweet, with a side-by-side probability delta comparison and a saved explanation file
+- **Counterfactual generation** — Groq API (`openai/gpt-oss-120b`) guided by LIME word weights to produce a minimal-edit sentiment-flipping rewrite for a demo tweet, with a side-by-side probability delta comparison and a saved explanation file
 - **Reproducibility artifacts** — the filtered/deduplicated id list, the full run configuration, and the Groq prompt template are exported to `./artifacts/`
 
 ---
@@ -200,7 +200,7 @@ Embedding extraction (Step 3) is the most time-consuming step. Step 6.6 (ablatio
 | `EPOCH_BUDGETS` | `[15, 30]` | Epoch caps swept per ablation variant |
 | `N_SEEDS` | `5` | Seeds per (variant, epoch budget) cell in the ablation sweep |
 | Ablation patience | `4` at 15 epochs, `5` at 30 epochs | Set via `make_callbacks(patience=...)`, proportional to the epoch budget |
-| `GROQ_MODEL` | `llama-3.1-8b-instant` | LLM used for counterfactual generation |
+| `GROQ_MODEL` | `openai/gpt-oss-120b` | LLM used for counterfactual generation |
 
 ---
 
