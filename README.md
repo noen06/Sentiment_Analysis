@@ -224,7 +224,7 @@ topic_id (1,) ──► Embedding(14, 32) ──► Flatten ──────�
                                                                        Softmax(3)
 ```
 
-- **Params**: 835,267 total — 832,195 trainable, 3,072 non-trainable (the two BatchNorm layers' running mean/variance)
+- **Params**: 835,267 total — 832,195 trainable, 3,072 non-trainable (the moving mean/variance of the three BatchNorm layers: (768 + 512 + 256) × 2)
 - **Optimizer**: AdamW (`lr=1e-3`, `weight_decay=0.01`)
 - **Loss**: `SparseCategoricalCrossentropy`
 - **Class balancing**: `compute_class_weight('balanced')` passed to `model.fit(class_weight=...)`
@@ -291,40 +291,41 @@ The counterfactual generation function retries up to **3 times** on API failure 
 
 | Class | Precision | Recall | F1 | Support |
 |-------|-----------|--------|----|---------|
-| Negative | 0.9181 | 0.8756 | 0.8963 | 2,700 |
-| Neutral | 0.7214 | 0.8630 | 0.7859 | 1,365 |
-| Positive | 0.9233 | 0.8724 | 0.8972 | 2,595 |
-| **Accuracy** | | | **0.8718** | 6,660 |
-| **Macro avg** | 0.8543 | 0.8703 | **0.8598** | 6,660 |
+| Negative | 0.9144 | 0.8896 | 0.9018 | 2,700 |
+| Neutral | 0.7500 | 0.8637 | 0.8029 | 1,365 |
+| Positive | 0.9244 | 0.8767 | 0.8999 | 2,595 |
+| **Accuracy** | | | **0.8793** | 6,660 |
+| **Macro avg** | 0.8629 | 0.8767 | **0.8682** | 6,660 |
+| Weighted avg | 0.8846 | 0.8793 | 0.8808 | 6,660 |
 
-Training ran the full 30-epoch budget without early stopping (best `val_loss` 0.3265 at the final epoch, restored from there); final train accuracy 0.8771 / val accuracy 0.8761.
+Single run at `SEED=42`. Training ran the full 30-epoch budget without early stopping (best `val_loss` ≈ 0.330 at the final epoch, so the model may not be fully converged); final train accuracy ≈ 0.882 / val accuracy ≈ 0.877. Over 5 seeds the same configuration averages 0.8737 ± 0.0023 accuracy / 0.8612 ± 0.0028 macro-F1 (see the ablation table below).
 
 **Baseline comparison — Table 3 (test set, sorted by macro-F1):**
 
 | Model | Accuracy | Macro F1 | Notes |
 |-------|----------|----------|-------|
-| Main model (RoBERTa emb + topic + BN + skip head) | 0.8718 | 0.8598 | trained head, Step 4–6 |
+| Main model (RoBERTa emb + topic + BN + skip head) | 0.8793 | 0.8682 | trained head, Step 4–6 (seed 42) |
 | E: TF-IDF (light cleaning) + LogisticRegression | 0.8601 | 0.8496 | keeps digits & hashtag words |
 | B: TF-IDF + LogisticRegression | 0.8595 | 0.8486 | vocab = 20,000 |
 | C: TF-IDF + predicted-topic one-hot + LogisticRegression | 0.8547 | 0.8443 | same (text, predicted-topic) input as the main model |
 | D: RoBERTa embeddings + LogisticRegression | 0.8116 | 0.7949 | StandardScaler + max_iter=2000 |
 | A: Zero-shot RoBERTa head | 0.6634 | 0.6256 | no training, model's own head |
 
-The trained fusion head beats every baseline, but the margin over the plain TF-IDF+LR baselines (B/C/E) is only ~1–1.5pp — most of the discriminative signal in this dataset is lexical. Zero-shot RoBERTa (A) lags far behind everything trained on this data, and frozen RoBERTa embeddings fed to a linear classifier (D) actually underperform simple TF-IDF, suggesting the sentiment-tuned embedding space isn't linearly separable enough on its own without the trained head.
+The trained fusion head beats every baseline, but the margin over the strongest TF-IDF+LR baseline (E) is only ~1.9pp accuracy / ~1.9pp macro-F1 for the seed-42 run (and smaller against the 5-seed mean), with no significance test for this comparison. Most of the discriminative signal in this dataset is lexical. Zero-shot RoBERTa (A) lags far behind everything trained on this data, and frozen RoBERTa embeddings fed to a linear classifier (D) actually underperform simple TF-IDF, suggesting the sentiment-tuned embedding space isn't linearly separable enough on its own without the trained head.
 
 **Ablation study — mean ± std over 5 seeds (Step 6.6):**
 
 | Variant | 15 epochs (acc / macro-F1) | 30 epochs (acc / macro-F1) |
 |---------|---------------------------|------------------------------|
-| full | 0.8443 ± 0.0043 / 0.8299 ± 0.0043 | 0.8685 ± 0.0051 / 0.8558 ± 0.0055 |
-| no_skip | 0.8447 ± 0.0051 / 0.8293 ± 0.0054 | 0.8687 ± 0.0040 / 0.8554 ± 0.0042 |
-| no_topic | 0.8397 ± 0.0075 / 0.8244 ± 0.0076 | 0.8593 ± 0.0033 / 0.8461 ± 0.0039 |
-| no_bn | 0.8306 ± 0.0043 / 0.8152 ± 0.0041 | 0.8486 ± 0.0027 / 0.8343 ± 0.0027 |
+| full | 0.8462 ± 0.0039 / 0.8313 ± 0.0043 | 0.8737 ± 0.0023 / 0.8612 ± 0.0028 |
+| no_skip | 0.8426 ± 0.0038 / 0.8276 ± 0.0044 | 0.8707 ± 0.0033 / 0.8574 ± 0.0034 |
+| no_topic | 0.8395 ± 0.0039 / 0.8241 ± 0.0040 | 0.8623 ± 0.0042 / 0.8491 ± 0.0047 |
+| no_bn | 0.8311 ± 0.0041 / 0.8154 ± 0.0045 | 0.8496 ± 0.0032 / 0.8356 ± 0.0033 |
 
-- **BatchNorm matters most** — removing it costs ~2pp accuracy and ~2pp macro-F1 at both budgets, the largest drop of any variant.
-- **The skip connection contributes essentially nothing** at 30 epochs (`no_skip` is statistically indistinguishable from `full`, and even marginally ahead within noise) — it's not pulling its weight in the current architecture.
-- **The topic branch gives a real, moderate lift** — dropping it costs ~0.9pp accuracy / ~1pp macro-F1 at 30 epochs.
-- More training (15 → 30 epochs) helps every variant, with `full` and `no_skip` benefiting most.
+- **BatchNorm matters most**: removing it lowers mean macro-F1 by 0.0256 at 30 epochs (~2.4pp accuracy), the largest drop of any variant at both budgets. Paired test over 5 matched seeds: p = 0.0002.
+- **The topic branch gives a real, moderate lift**: dropping it lowers macro-F1 by 0.0121 and accuracy by ~1.1pp at 30 epochs.
+- **The skip connection contributes essentially nothing**: dropping it changes macro-F1 by only 0.0038 at 30 epochs, within seed-to-seed noise. It is kept for consistency with the documented design, but a head without it would be equally defensible.
+- `full` has the highest mean accuracy and macro-F1 at both budgets. More training (15 → 30 epochs) helps every variant.
 
 **Auxiliary topic classifier (Step 3.4):** 5-fold CV accuracy 0.9490 (`C=10.0`, `max_features=20000`); test accuracy 0.9544, test macro-F1 0.9212 — this is the classifier whose *predictions* feed the main model's `topic_id` input.
 
